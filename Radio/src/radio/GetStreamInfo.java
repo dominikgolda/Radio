@@ -1,3 +1,4 @@
+package radio;
 import java.net.MalformedURLException;
 import java.net.URLConnection;
 import java.net.URL;
@@ -10,7 +11,7 @@ import javax.sound.sampled.*;
 
 public class GetStreamInfo{
 
-	String m_adresURL;
+	private String m_adresURL;
 	
 	GetStreamInfo(String adresURL){
 		m_adresURL = adresURL;
