@@ -16,14 +16,20 @@ import javax.swing.JButton;
 
 import radio.Kontroler;
 
+import javax.swing.JMenuBar;
+import javax.swing.JMenu;
+import javax.swing.JCheckBox;
+
 public class MainPanel {
 
-	private JFrame frame;
+	private JFrame frmRadio;
 	private JToggleButton tglBtnPlayPause ;
 	private JButton btnStop;
 	private Kontroler m_radio;
 	private Object m_signal;
 	private Thread watekRadia;
+	private JToggleButton tglbtnStartRecording;
+	private JCheckBox chckbxRecordBuffer;
 	/**
 	 * Launch the application.
 	 */
@@ -32,7 +38,7 @@ public class MainPanel {
 			public void run() {
 				try {
 					MainPanel window = new MainPanel();
-					window.frame.setVisible(true);
+					window.frmRadio.setVisible(true);
 				} catch (Exception e) {
 					e.printStackTrace();
 				}
@@ -51,13 +57,15 @@ public class MainPanel {
 	 * Initialize the contents of the frame.
 	 */
 	private void initialize() {
-		frame = new JFrame();
-		frame.setBounds(100, 100, 450, 300);
-		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-		frame.getContentPane().setLayout(null);
+		frmRadio = new JFrame();
+		frmRadio.setTitle("Radio");
+		frmRadio.setBounds(100, 100, 378, 223);
+		frmRadio.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+		frmRadio.getContentPane().setLayout(null);
+		frmRadio.setResizable(false);
 		m_signal = new Object();
 		try {
-			m_radio = new Kontroler("http://wroclaw.radio.pionier.net.pl:8000/pl/tuba10-1.mp3",true,m_signal);
+			m_radio = new Kontroler("http://icecast.commedia.org.uk:8000/takeover.mp3",true,m_signal);
 		} catch (MalformedURLException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -91,8 +99,8 @@ public class MainPanel {
 				}
 			}
 		});
-		tglBtnPlayPause.setBounds(10, 11, 121, 23);
-		frame.getContentPane().add(tglBtnPlayPause);
+		tglBtnPlayPause.setBounds(231, 63, 121, 23);
+		frmRadio.getContentPane().add(tglBtnPlayPause);
 		
 		btnStop = new JButton("Stop");
 		btnStop.addActionListener(new ActionListener() {
@@ -100,9 +108,44 @@ public class MainPanel {
 				m_radio.stop();
 			}
 		});
-		btnStop.setBounds(10, 42, 121, 23);
-		frame.getContentPane().add(btnStop);
+		btnStop.setBounds(231, 97, 121, 23);
+		frmRadio.getContentPane().add(btnStop);
+		
+		tglbtnStartRecording = new JToggleButton("Start Recording");
+		tglbtnStartRecording.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent arg0) {
+				JToggleButton tBtn = (JToggleButton)arg0.getSource();
+				try{
+					if(tBtn.isSelected()){
+						tBtn.setText("Recording...");
+						m_radio.recordBuffer("C:\\Users\\Dominik\\Desktop\\test.mp3", true);
+					}else{
+						tBtn.setText("Start Recording");
+						m_radio.stopRecording();
+					}
+				}catch(Exception wyj){
+					wyj.printStackTrace();
+				}
+			}
+		});
+		tglbtnStartRecording.setBounds(231, 131, 121, 23);
+		frmRadio.getContentPane().add(tglbtnStartRecording);
+		
+		chckbxRecordBuffer = new JCheckBox("Record Buffer");
+		chckbxRecordBuffer.setBounds(128, 131, 97, 23);
+		frmRadio.getContentPane().add(chckbxRecordBuffer);
+		
+		JMenuBar menuBar = new JMenuBar();
+		frmRadio.setJMenuBar(menuBar);
+		
+		JMenu mnNewMenu = new JMenu("New menu");
+		menuBar.add(mnNewMenu);
 		watekRadia = new Thread(m_radio);
 		watekRadia.start();
 	}
 }
+//Testowe adresy stacji:
+//http://icecast.linxtelecom.com:8000/mania.mp3
+//"http://wroclaw.radio.pionier.net.pl:8000/pl/tuba10-1.mp3"
+//http://vipicecast.yacast.net/rmc
+//URL urlFormat = new URL("http://icecast.commedia.org.uk:8000/takeover.mp3");

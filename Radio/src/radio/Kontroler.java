@@ -1,4 +1,5 @@
 package radio;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.util.ArrayList;
@@ -11,10 +12,12 @@ import javax.sound.sampled.UnsupportedAudioFileException;
 
 
 public class Kontroler implements Runnable, BasicPlayer{
-	
+
+	private boolean m_firstStart = true;
 	private boolean PAUSED;
 	private boolean STOPED;
 	private boolean EXIT = false;
+	private final int BUFFER_SIZE = 32768;//32768
 	Object m_notifier = new Object();
 	Object m_signal;
 	ExchangeBuffer buforInternet;
@@ -22,48 +25,21 @@ public class Kontroler implements Runnable, BasicPlayer{
 	InternetReader intRead;
 	Buffer buf;
 	List<BasicPlayer> classList;
-	
+	String radioURL;
+
 	public Kontroler(String radioURL,boolean stoped,Object signal) throws MalformedURLException, IOException, LineUnavailableException, UnsupportedAudioFileException{
 		STOPED = stoped;
 		m_signal = signal;
-		buforInternet = new ExchangeBuffer(88200); //16384
-		GetStreamInfo streamInfo = new GetStreamInfo("http://wroclaw.radio.pionier.net.pl:8000/pl/tuba10-1.mp3");
-		buf = new Buffer(buforInternet);
-		odtwarzacz = null;
-		intRead = null;
-		intRead = new InternetReader(buforInternet,streamInfo.getStream());
-		Thread watekInternetowy;
-		watekInternetowy = new Thread(intRead);
-		watekInternetowy.start();
-		
-		//czekamy na nape³nienie bufora
-		synchronized(buforInternet){
-			if(!buforInternet.getDataAvailableFlag()){	//tu nale¿y dopisaæ jeszcze flagi, stop (exit?)
-				try{				
-					buforInternet.wait();
-				}catch (InterruptedException  e){e.printStackTrace();}
-			}
-		}
-		//odczyt z bufora
-		buf.write();
-		odtwarzacz = new AudioPlayer(streamInfo.getStreamFormat(),buf,m_notifier,88200);
-		intRead.stop();
-		
-		classList = new ArrayList<BasicPlayer>();
-		classList.add(intRead);
-		classList.add(buf);
-		classList.add(odtwarzacz);
+		buforInternet = new ExchangeBuffer(BUFFER_SIZE); //16384
+		this.radioURL = radioURL;
+
 	}
-	
+
 	public  void run(){
 
-		Thread  watekPlayera;
-		watekPlayera = new Thread(odtwarzacz);
-		watekPlayera.start();
-		intRead.play();
-		
+
 		while(!EXIT){
-			
+
 			synchronized(m_signal){
 				while(STOPED){
 					try{
@@ -71,8 +47,8 @@ public class Kontroler implements Runnable, BasicPlayer{
 					}catch(InterruptedException e){}
 				}
 			}
-			
-			
+
+
 			synchronized(buforInternet){
 				if(!buforInternet.getDataAvailableFlag()){
 					try{
@@ -82,7 +58,7 @@ public class Kontroler implements Runnable, BasicPlayer{
 					}catch (InterruptedException e){e.printStackTrace();}
 				}
 			}
-			
+
 			if(buforInternet.getDataAvailableFlag()){
 				System.out.println("K : przepisujê dane");
 				buf.write();
@@ -113,24 +89,69 @@ public class Kontroler implements Runnable, BasicPlayer{
 
 	@Override
 	public void play(){
-		if(STOPED==true && PAUSED == true){
-			STOPED = false;
-			PAUSED = false;
-		}else if(STOPED==true){
-			STOPED = false;
-		}else if(PAUSED==true){
-			PAUSED = false;
+		if(m_firstStart){
+			try{
+				GetStreamInfo streamInfo = new GetStreamInfo(radioURL);
+				buf = new Buffer(buforInternet);
+				odtwarzacz = null;
+				intRead = null;
+				intRead = new InternetReader(buforInternet,streamInfo.getStream());
+				Thread watekInternetowy;
+				watekInternetowy = new Thread(intRead);
+				watekInternetowy.start();
+				System.out.println("1");
+				//czekamy na nape³nienie bufora
+				synchronized(buforInternet){
+					if(!buforInternet.getDataAvailableFlag()){	//tu nale¿y dopisaæ jeszcze flagi, stop (exit?)
+						try{				
+							buforInternet.wait();
+						}catch (InterruptedException  e){e.printStackTrace();}
+					}
+				}
+				System.out.println("2");
+				//odczyt z bufora
+				buf.write();
+				odtwarzacz = new AudioPlayer(streamInfo.getStreamFormat(),buf,m_notifier,BUFFER_SIZE);
+				intRead.stop();
+				System.out.println("3");
+
+				classList = new ArrayList<BasicPlayer>();
+				classList.add(intRead);
+				classList.add(buf);
+				classList.add(odtwarzacz);
+				m_firstStart = false;
+				System.out.println("4");
+				Thread  watekPlayera;
+				watekPlayera = new Thread(odtwarzacz);
+				watekPlayera.start();
+				intRead.play();
+				this.play();
+				System.out.println("5");
+				STOPED = false;
+
+			}catch(Exception e){
+				m_firstStart = true;
+				e.printStackTrace();
+			}
+		}else{
+			if(STOPED==true && PAUSED == true){
+				STOPED = false;
+				PAUSED = false;
+			}else if(STOPED==true){
+				STOPED = false;
+			}else if(PAUSED==true){
+				PAUSED = false;
+			}
+			synchronized(m_notifier){
+				m_notifier.notifyAll();
+			}
+			synchronized(buforInternet){
+				buforInternet.notifyAll();
+			}
+			for(BasicPlayer au:classList){
+				au.play();
+			}
 		}
-		synchronized(m_notifier){
-			m_notifier.notifyAll();
-		}
-		synchronized(buforInternet){
-			buforInternet.notifyAll();
-		}
-		for(BasicPlayer au:classList){
-			au.play();
-		}
-		
 	}
 
 	@Override
@@ -140,8 +161,44 @@ public class Kontroler implements Runnable, BasicPlayer{
 			au.exitRadio();
 		}
 	}
+
+
 	
 	
+	
+	
+	/**
+	 * <p> Pozwala rozpocz¹æ zapisywanie do pliku.
+	 * @param filePath - œcie¿ka do pliku razem z jego nazw¹ i rozszerzeniem.
+	 * @throws IOException
+	 * @throws FileNotFoundException jest to podklasa IOException
+	 */
+	public void startRecording(String filePath) throws IOException{
+		buf.startRecording(filePath);
+	}
+
+	/**
+	 * <p> Pozwala zakoñczyæ zapisywanie do pliku.
+	 */
+	public void stopRecording(){
+		buf.stopRecording();
+	}
+
+	/**
+	 * <p> Pozwala zapisaæ ca³y bufor (od rozpoczêcia odtwarzania).
+	 * <p>Je¿eli parametr <b>czyKontynuowacZapis</b> jest równy <b>true</b>
+	 * zapis dokonywany jest do pliku podanego w argumencie <b>filePath</b>, po czym kontynuowany jest zapis do wczeœniej otwartego pliku.
+	 * <p>Je¿eli parametr <b>czyKontynuowacZapis</b> jest równy <b>false</b> zapis dokonywany jest do pliku podanego w w argumencie <b>filePath</b>,
+	 * po czym plik ten jest zamykany.
+	 * @param filePath œcie¿ka do pliku razem z jego nazw¹ i rozszerzeniem.
+	 * @param czyKontynuowacZapis okreœla, czy nale¿y po zapisaniu ca³ego bufora kontynuowaæ zapis do tego samego pliku
+	 * @throws IOException
+	 * @throws FileNotFoundException jest to podklasa IOException
+	 */
+	public void recordBuffer(String filePath, boolean czyKontynuowacZapis) throws IOException{
+		buf.recordBuffer(filePath, czyKontynuowacZapis);
+	}
+
 
 }
 

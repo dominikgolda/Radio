@@ -37,11 +37,13 @@ public class InternetReader  implements Runnable, BasicPlayer {
 						synchronized(m_exchangeBuffer){
 							while(m_exchangeBuffer.getDataAvailableFlag()){//czekamy, a¿ bufor bêdzie wolny
 								try{
+									System.out.println("IR: Czekam na wolny bufor");
 									m_exchangeBuffer.wait();
 								}catch (InterruptedException  e){e.printStackTrace();}
 							}
 						}
 						m_exchangeBuffer.fillBuffer(m_buffer);
+						System.out.println("IR: przepisa³em dane do bufora");
 						m_wskZapisu = 0;
 					}
 				}catch(IOException e){
