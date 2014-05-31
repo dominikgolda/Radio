@@ -59,16 +59,19 @@ public class Buffer implements BasicAudio,BasicPlayer {
 	}
 
 	@Override
-	public void play() {
-		// TODO Auto-generated method stub
-		
-	}
+	public void play() {}
 	
 	/**
 	 * <p> Jest zaimplementowana jako metoda pusta. Buffer nie zmienia swojego stanu w przypadku zatrzymania odtwarzania.
 	 */
 		@Override
 	public void pause() {}
+
+	@Override
+	public void exitRadio() {
+		// TODO Auto-generated method stub
+		
+	}
 
 
 

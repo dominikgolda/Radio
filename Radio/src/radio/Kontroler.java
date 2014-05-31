@@ -14,6 +14,7 @@ public class Kontroler implements Runnable, BasicPlayer{
 	
 	private boolean PAUSED;
 	private boolean STOPED;
+	private boolean EXIT = false;
 	Object m_notifier = new Object();
 	Object m_signal;
 	ExchangeBuffer buforInternet;
@@ -61,7 +62,7 @@ public class Kontroler implements Runnable, BasicPlayer{
 		watekPlayera.start();
 		intRead.play();
 		
-		while(true){
+		while(!EXIT){
 			
 			synchronized(m_signal){
 				while(STOPED){
@@ -86,7 +87,7 @@ public class Kontroler implements Runnable, BasicPlayer{
 				System.out.println("K : przepisujê dane");
 				buf.write();
 				synchronized(m_notifier){			//informacja dla AudioPlayer, ¿e dane s¹ ju¿ dostêpne
-					m_notifier.notify();
+					m_notifier.notifyAll();
 				}
 			}
 		}
@@ -111,19 +112,33 @@ public class Kontroler implements Runnable, BasicPlayer{
 
 
 	@Override
-	public void play() {
+	public void play(){
 		if(STOPED==true && PAUSED == true){
 			STOPED = false;
-			PAUSED = true;
+			PAUSED = false;
 		}else if(STOPED==true){
 			STOPED = false;
 		}else if(PAUSED==true){
-			PAUSED = true;
+			PAUSED = false;
+		}
+		synchronized(m_notifier){
+			m_notifier.notifyAll();
+		}
+		synchronized(buforInternet){
+			buforInternet.notifyAll();
 		}
 		for(BasicPlayer au:classList){
 			au.play();
 		}
 		
+	}
+
+	@Override
+	public void exitRadio() {
+		EXIT = true;
+		for(BasicPlayer au:classList){
+			au.exitRadio();
+		}
 	}
 	
 	

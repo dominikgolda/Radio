@@ -4,6 +4,7 @@ import java.io.IOException;
 
 
 
+
 import javax.sound.sampled.*;
 
 import java.io.*;
@@ -13,7 +14,8 @@ import java.io.*;
 public class AudioPlayer implements BasicPlayer, Runnable{
 
 	private boolean m_playerPause = false;
-	private boolean m_playerStop = false;
+	private boolean m_playerStop = true;
+	private boolean m_exitPlayer = false;
 	private AudioFormat m_format;
 	private BasicAudio m_prevModule;
 	private int m_buffSize;
@@ -57,15 +59,16 @@ public class AudioPlayer implements BasicPlayer, Runnable{
 			m_odtwarzacz.open();
 			m_odtwarzacz.start();
 			AudioInputStream auStr1;
-			while(!m_playerStop){
-
-
+			while(!m_exitPlayer){
 				try{
-					do{	//czekamy a¿ player wyjdzie ze stanu PAUSE
-						while (  ((przeczytane=m_audioStream.read(bufor))!=-1) && !m_playerStop&&!m_playerPause){ 	
+					//////	czekamy a¿ player wyjdzie ze stanu PAUSE	/////
+					do{
+						while (  ((przeczytane=m_audioStream.read(bufor))!=-1) && !m_playerStop&&!m_playerPause&!m_exitPlayer){ 	
 							m_odtwarzacz.write(bufor, 0,przeczytane);
 						}
-						if(m_playerPause){	//je¿eli player zosta³ zatrzymany (nie wy³¹czony) czekamy a¿ w¹tek Kontrolera powiadomi nas, ¿e nale¿y wzonwiæ odtwarzanie.
+						//////je¿eli player zosta³ zatrzymany (nie wy³¹czony) czekamy a¿ w¹tek Kontrolera powiadomi nas, ¿e nale¿y wzonwiæ odtwarzanie.	/////
+						if(m_playerPause){	
+							System.out.println("AP: odtwarzanie wstrzymane");
 							synchronized(m_notifier){
 								try{
 									m_notifier.wait();
@@ -75,28 +78,48 @@ public class AudioPlayer implements BasicPlayer, Runnable{
 					}while(m_playerPause);
 				}catch(ArrayIndexOutOfBoundsException e){e.printStackTrace();}	//potrzebne, bo biblioteka do obs³ugi mp3 czasem rzuca taki wyj¹tek
 
-
-				int pom = m_prevModule.read(m_buffer, 0, m_buffSize);
-				if(pom>0){
-					try{
-						m_byteArrayStream.reset();
-						auStr1 = AudioSystem.getAudioInputStream(m_byteArrayStream);
-						m_audioStream = AudioSystem.getAudioInputStream(m_format,auStr1);
-					}catch(UnsupportedAudioFileException e){
-						e.printStackTrace();
-						System.out.println("pom = "+pom);
-					}
-				}else{
+				//////	czekamy na wznowieniu playera po zatrzymaniu	/////
+				while(m_playerStop){
+					m_audioStream = null;
 					synchronized(m_notifier){
 						try{
-							m_notifier.wait();//czekam, a¿ dojd¹ nowe dane
+							m_notifier.wait();
 						}catch(InterruptedException e){}
-					}					
+					}
 				}
-			}
-			m_odtwarzacz.drain();
-			m_odtwarzacz.stop();
 
+				//////	wyjœcie z programu	/////
+				if(m_exitPlayer){			
+					m_odtwarzacz.drain();
+					m_odtwarzacz.stop();
+					Thread.currentThread().interrupt();
+					return;
+				}
+				int pom;
+				do{
+					//////	Odczyt danych od poprzedniego modu³u	/////
+					pom = m_prevModule.read(m_buffer, 0, m_buffSize);
+					//////	Je¿eli s¹ dane tworzymy strumieñ dekoduj¹cy mp3	/////
+
+					if(pom>0){
+						try{
+							m_byteArrayStream.reset();
+							auStr1 = AudioSystem.getAudioInputStream(m_byteArrayStream);
+							m_audioStream = AudioSystem.getAudioInputStream(m_format,auStr1);
+						}catch(UnsupportedAudioFileException e){
+							e.printStackTrace();
+							System.out.println("pom = "+pom);
+						}
+						//////	Je¿eli nie ma danych czekamy napowiadomienie od Kontroler'a	/////
+					}else{
+						synchronized(m_notifier){
+							try{
+								m_notifier.wait();//czekam, a¿ dojd¹ nowe dane
+							}catch(InterruptedException e){}
+						}					
+					}
+				}while(pom<=0);
+			}
 
 		}catch(Exception e){
 			System.out.println("Error");
@@ -104,6 +127,11 @@ public class AudioPlayer implements BasicPlayer, Runnable{
 			e.printStackTrace();
 
 		}
+		//////	drugie wyjœcie z programu	/////
+		m_odtwarzacz.drain();
+		m_odtwarzacz.stop();
+		Thread.currentThread().interrupt();
+		return;
 
 	}
 
@@ -122,5 +150,10 @@ public class AudioPlayer implements BasicPlayer, Runnable{
 	@Override
 	public void play() {
 		m_playerPause = false;
+		m_playerStop = false;
+	}
+
+	public void exitRadio(){
+		m_exitPlayer = true;
 	}
 }
