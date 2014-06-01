@@ -3,27 +3,22 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
-import java.util.ArrayList;
 import java.util.List;
 
 
 
 public class PauseBuffer extends Buffer implements BasicAudio,BasicPlayer {
 
-	protected ExchangeBuffer m_exchangeBuf;
+	private ExchangeBuffer m_exchangeBuf;
 
-	protected int listIndex;
-	protected int arrayPosition;
-	protected List<byte[]> m_listBufor;
-
-	protected OutputStream fileStream;
-	protected Boolean isRecording = false;
+	protected ArrayListWraper m_listBufor;
+	
+	private OutputStream fileStream;
+	private Boolean isRecording = false;
 
 	public PauseBuffer(ExchangeBuffer exchangeBuf){
-		m_listBufor = new ArrayList<byte[]>();
+		m_listBufor = new ArrayListWraper();
 		m_exchangeBuf = exchangeBuf;
-		listIndex = 0;
-		arrayPosition = 0;
 	}
 	@Override
 	public synchronized void write(){
@@ -42,34 +37,13 @@ public class PauseBuffer extends Buffer implements BasicAudio,BasicPlayer {
 	}
 	@Override
 	public synchronized int read(byte[] buff, int startPos, int bytesToRead){
-		if(m_listBufor.size()<=listIndex){return -1;} // nie ma dalszych elementów listy
-		byte []	tab = m_listBufor.get(listIndex);
-		int odczytane = 0;
-		int i;
-		while(odczytane<bytesToRead){	
-			if(arrayPosition<tab.length){
-				for(i = 0;arrayPosition<tab.length&&i<bytesToRead;i++,arrayPosition++){
-					buff[i+startPos] = tab[arrayPosition];
-				}
-				odczytane +=i;
-			}else{
-				listIndex++;
-				arrayPosition=0;
-				if(m_listBufor.size()<=listIndex){return odczytane;}
-				else{
-					tab = m_listBufor.get(listIndex);
-				}
-			}
-		}
-		return odczytane;
+		return m_listBufor.read(buff, startPos, bytesToRead);
 	}
 
 
 	@Override
 	public void stop() {
-		m_listBufor = new ArrayList<byte[]>();
-		listIndex = 0;
-		arrayPosition = 0;
+		m_listBufor.clear();
 	}
 
 	@Override
@@ -133,14 +107,15 @@ public class PauseBuffer extends Buffer implements BasicAudio,BasicPlayer {
 	 */
 	@Override
 	public synchronized  void recordBuffer(String filePath, boolean czyKontynuowacZapis) throws IOException{
+		List<byte[]> list = m_listBufor.getData();
 		if(czyKontynuowacZapis){
 			startRecording(filePath);
-			for(byte [] ar:m_listBufor){
+			for(byte [] ar:list){
 				fileStream.write(ar, 0, ar.length);
 			}
 		}else{
 			OutputStream outStr = new FileOutputStream(filePath);
-			for(byte [] ar:m_listBufor){
+			for(byte [] ar:list){
 				outStr.write(ar, 0, ar.length);
 			}
 			outStr.flush();

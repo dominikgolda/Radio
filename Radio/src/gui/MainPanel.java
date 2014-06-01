@@ -19,6 +19,7 @@ import radio.Kontroler;
 import javax.swing.JMenuBar;
 import javax.swing.JMenu;
 import javax.swing.JCheckBox;
+import javax.swing.JTextField;
 
 public class MainPanel {
 
@@ -30,6 +31,7 @@ public class MainPanel {
 	private Thread watekRadia;
 	private JToggleButton tglbtnStartRecording;
 	private JCheckBox chckbxRecordBuffer;
+	private JTextField textPosition;
 	/**
 	 * Launch the application.
 	 */
@@ -65,7 +67,7 @@ public class MainPanel {
 		frmRadio.setResizable(false);
 		m_signal = new Object();
 		try {
-			m_radio = new Kontroler("http://icecast.commedia.org.uk:8000/takeover.mp3",true,m_signal);
+			m_radio = new Kontroler("http://wroclaw.radio.pionier.net.pl:8000/pl/tuba10-1.mp3",true,m_signal);
 		} catch (MalformedURLException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -134,6 +136,22 @@ public class MainPanel {
 		chckbxRecordBuffer = new JCheckBox("Record Buffer");
 		chckbxRecordBuffer.setBounds(128, 131, 97, 23);
 		frmRadio.getContentPane().add(chckbxRecordBuffer);
+		
+		textPosition = new JTextField();
+		textPosition.setBounds(139, 30, 86, 20);
+		frmRadio.getContentPane().add(textPosition);
+		textPosition.setColumns(10);
+		
+		JButton btnSetPosition = new JButton("Set Position");
+		btnSetPosition.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				String str = textPosition.getText();
+				double val = Double.parseDouble(str);
+				m_radio.setBufferPositionRelative(val);
+			}
+		});
+		btnSetPosition.setBounds(231, 29, 121, 23);
+		frmRadio.getContentPane().add(btnSetPosition);
 		
 		JMenuBar menuBar = new JMenuBar();
 		frmRadio.setJMenuBar(menuBar);

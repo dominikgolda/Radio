@@ -92,7 +92,7 @@ public class Kontroler implements Runnable, BasicPlayer{
 		if(m_firstStart){
 			try{
 				GetStreamInfo streamInfo = new GetStreamInfo(radioURL);
-				buf = new PauseBuffer(buforInternet);
+				buf = new RewindBuffer(buforInternet);
 				odtwarzacz = null;
 				intRead = null;
 				intRead = new InternetReader(buforInternet,streamInfo.getStream());
@@ -163,10 +163,21 @@ public class Kontroler implements Runnable, BasicPlayer{
 	}
 
 
-	
-	
-	
-	
+	/**
+	 * <p> Ustawia pozycjê od której nast¹pi odtwarzanie. Mo¿na ustawiæ dowolny punkt pomiêdzy chwil¹ obecn¹ a rozpoczêciem odtwarzania lub ostatnim zatrzymaniem (funkcj¹ stop) playera
+	 * Zatrzymanie playera funkcja pause() nie wp³ywa na dostêpny odcinek czasu.
+	 * @param pos liczba z przedzia³u [0,1) okreœlaj¹ca w którym punkcie nale¿y rozpocz¹æ dalesze odtwarzanie.
+	 */
+	public void setBufferPositionRelative(double pos){
+		try{
+			RewindBuffer b = (RewindBuffer) buf;
+			odtwarzacz.stop();
+			b.setBufferPositionRelative(pos);
+			odtwarzacz.play();
+		}catch(ClassCastException e){}
+	}
+
+
 	/**
 	 * <p> Pozwala rozpocz¹æ zapisywanie do pliku.
 	 * @param filePath - œcie¿ka do pliku razem z jego nazw¹ i rozszerzeniem.

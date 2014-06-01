@@ -50,7 +50,6 @@ public class AudioPlayer implements BasicPlayer, Runnable{
 
 	public void run(){
 		try{
-//			int licznikCzekaniaNaDane = 0;			//je¿eli czekamy na dane wiêcej razy w³¹czane jest opóŸnienie
 			//zmienne pomocnicze
 			int dlRamki = 16;						//d³ugoœæ ramki
 			int maksDlRamki = dlRamki*100;			//d³ugoœæ bufora którym odczytujemy 
@@ -115,25 +114,12 @@ public class AudioPlayer implements BasicPlayer, Runnable{
 					}else{
 						synchronized(m_notifier){
 							try{
-//								licznikCzekaniaNaDane +=2;
 								System.out.println("AP: oczekujê na dane");
 								m_notifier.wait();//czekam, a¿ dojd¹ nowe dane
 							}catch(InterruptedException e){}
 						}					
 					}
 				}while(pom<=0);
-//				if(licznikCzekaniaNaDane<0){
-//					licznikCzekaniaNaDane = 0;
-//				}else if(licznikCzekaniaNaDane>=10){
-//					licznikCzekaniaNaDane=0;
-//					System.out.println("AP: rozpoczynam opóŸnienie");
-//					synchronized(m_notifier){
-//						try{
-//							m_notifier.wait(1000);
-//						}catch(InterruptedException e){}
-//					}
-//					System.out.println("Koñczê oczekiwanie");
-//				}
 			}
 
 		}catch(Exception e){
