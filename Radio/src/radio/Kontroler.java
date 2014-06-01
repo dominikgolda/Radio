@@ -92,7 +92,7 @@ public class Kontroler implements Runnable, BasicPlayer{
 		if(m_firstStart){
 			try{
 				GetStreamInfo streamInfo = new GetStreamInfo(radioURL);
-				buf = new Buffer(buforInternet);
+				buf = new PauseBuffer(buforInternet);
 				odtwarzacz = null;
 				intRead = null;
 				intRead = new InternetReader(buforInternet,streamInfo.getStream());
