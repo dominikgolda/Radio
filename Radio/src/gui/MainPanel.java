@@ -11,6 +11,7 @@ import java.awt.event.ActionListener;
 import java.awt.event.ActionEvent;
 import java.io.IOException;
 import java.net.MalformedURLException;
+import java.util.concurrent.TimeUnit;
 
 import javax.swing.JButton;
 
@@ -20,6 +21,7 @@ import javax.swing.JMenuBar;
 import javax.swing.JMenu;
 import javax.swing.JCheckBox;
 import javax.swing.JTextField;
+import javax.swing.JLabel;
 
 public class MainPanel {
 
@@ -30,8 +32,11 @@ public class MainPanel {
 	private Object m_signal;
 	private Thread watekRadia;
 	private JToggleButton tglbtnStartRecording;
-	private JCheckBox chckbxRecordBuffer;
-	private JTextField textPosition;
+	private JTextField textCurrentDelay;
+	private JTextField textMaxDelay;
+	private JTextField textSetDelay;
+	private long time;
+	
 	/**
 	 * Launch the application.
 	 */
@@ -69,16 +74,12 @@ public class MainPanel {
 		try {
 			m_radio = new Kontroler("http://wroclaw.radio.pionier.net.pl:8000/pl/tuba10-1.mp3",true,m_signal);
 		} catch (MalformedURLException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		} catch (LineUnavailableException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		} catch (UnsupportedAudioFileException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 		tglBtnPlayPause = new JToggleButton("Play");
@@ -113,7 +114,7 @@ public class MainPanel {
 		btnStop.setBounds(231, 97, 121, 23);
 		frmRadio.getContentPane().add(btnStop);
 		
-		tglbtnStartRecording = new JToggleButton("Start Recording");
+		tglbtnStartRecording = new JToggleButton("Start recording");
 		tglbtnStartRecording.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent arg0) {
 				JToggleButton tBtn = (JToggleButton)arg0.getSource();
@@ -133,25 +134,47 @@ public class MainPanel {
 		tglbtnStartRecording.setBounds(231, 131, 121, 23);
 		frmRadio.getContentPane().add(tglbtnStartRecording);
 		
-		chckbxRecordBuffer = new JCheckBox("Record Buffer");
-		chckbxRecordBuffer.setBounds(128, 131, 97, 23);
-		frmRadio.getContentPane().add(chckbxRecordBuffer);
+		textCurrentDelay = new JTextField();
+		textCurrentDelay.setEditable(false);
+		textCurrentDelay.setText("00:00:00");
+		textCurrentDelay.setBounds(12, 30, 70, 20);
+		frmRadio.getContentPane().add(textCurrentDelay);
+		textCurrentDelay.setColumns(10);
 		
-		textPosition = new JTextField();
-		textPosition.setBounds(139, 30, 86, 20);
-		frmRadio.getContentPane().add(textPosition);
-		textPosition.setColumns(10);
-		
-		JButton btnSetPosition = new JButton("Set Position");
+		JButton btnSetPosition = new JButton("Set position");
 		btnSetPosition.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
-				String str = textPosition.getText();
+				String str = textCurrentDelay.getText();
 				double val = Double.parseDouble(str);
 				m_radio.setBufferPositionRelative(val);
 			}
 		});
-		btnSetPosition.setBounds(231, 29, 121, 23);
+		btnSetPosition.setBounds(231, 28, 121, 23);
 		frmRadio.getContentPane().add(btnSetPosition);
+		JLabel lblNewLabel = new JLabel("Delay");
+		lblNewLabel.setBounds(12, 12, 70, 15);
+		frmRadio.getContentPane().add(lblNewLabel);
+		
+		JLabel lblNewLabel_1 = new JLabel("Max delay");
+		lblNewLabel_1.setBounds(106, 12, 109, 15);
+		frmRadio.getContentPane().add(lblNewLabel_1);
+		
+		textMaxDelay = new JTextField();
+		textMaxDelay.setEditable(false);
+		textMaxDelay.setText("00:00:00");
+		textMaxDelay.setBounds(106, 30, 70, 19);
+		frmRadio.getContentPane().add(textMaxDelay);
+		textMaxDelay.setColumns(10);
+		
+		textSetDelay = new JTextField();
+		textSetDelay.setText("00:00:00");
+		textSetDelay.setColumns(10);
+		textSetDelay.setBounds(12, 83, 70, 20);
+		frmRadio.getContentPane().add(textSetDelay);
+		
+		JLabel lblSetDelay = new JLabel("Set delay");
+		lblSetDelay.setBounds(12, 63, 70, 15);
+		frmRadio.getContentPane().add(lblSetDelay);
 		
 		JMenuBar menuBar = new JMenuBar();
 		frmRadio.setJMenuBar(menuBar);
@@ -161,6 +184,16 @@ public class MainPanel {
 		watekRadia = new Thread(m_radio);
 		watekRadia.start();
 	}
+	
+	
+	
+    private static String formatInterval(final long l)
+    {
+        final long hr = TimeUnit.MILLISECONDS.toHours(l);
+        final long min = TimeUnit.MILLISECONDS.toMinutes(l - TimeUnit.HOURS.toMillis(hr));
+        final long sec = TimeUnit.MILLISECONDS.toSeconds(l - TimeUnit.HOURS.toMillis(hr) - TimeUnit.MINUTES.toMillis(min));
+        return String.format("%02d:%02d:%02d", hr, min, sec);
+    }
 }
 //Testowe adresy stacji:
 //http://icecast.linxtelecom.com:8000/mania.mp3
