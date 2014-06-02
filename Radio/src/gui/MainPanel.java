@@ -19,7 +19,6 @@ import radio.Kontroler;
 
 import javax.swing.JMenuBar;
 import javax.swing.JMenu;
-import javax.swing.JCheckBox;
 import javax.swing.JTextField;
 import javax.swing.JLabel;
 
