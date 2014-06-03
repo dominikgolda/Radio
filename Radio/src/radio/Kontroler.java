@@ -67,6 +67,7 @@ public class Kontroler implements Runnable, BasicPlayer{
 				}
 			}
 		}
+		System.out.println("K : Koñczê pracê");
 	}
 
 	@Override
@@ -173,11 +174,11 @@ public class Kontroler implements Runnable, BasicPlayer{
 			RewindBuffer b = (RewindBuffer) buf;
 			odtwarzacz.stop();
 			b.setBufferPositionRelative(pos);
-//			synchronized(m_signal){
-//				try{
-//					m_signal.wait(100);
-//				}catch(Exception e1){}
-//			}
+			synchronized(m_signal){
+				try{
+					m_signal.wait(100);
+				}catch(Exception e1){}
+			}
 			if(startPlay){
 				odtwarzacz.play();
 			}

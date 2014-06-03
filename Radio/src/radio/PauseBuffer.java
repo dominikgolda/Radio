@@ -90,8 +90,8 @@ public class PauseBuffer extends Buffer implements BasicAudio,BasicPlayer {
 			fileStream.close();
 			isRecording = false;
 		}catch(IOException e){
-			e.printStackTrace();
-		}
+			//e.printStackTrace();
+		}catch(Exception e1){}
 	}
 
 	/**
