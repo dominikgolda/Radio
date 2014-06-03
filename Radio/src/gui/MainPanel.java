@@ -23,8 +23,11 @@ import javax.swing.JButton;
 import radio.Kontroler;
 
 import javax.swing.ImageIcon;
+import javax.swing.JMenuBar;
+import javax.swing.JMenu;
 import javax.swing.JTextField;
 import javax.swing.Timer;
+import javax.swing.JLabel;
 import javax.swing.JLabel;
 
 public class MainPanel {
