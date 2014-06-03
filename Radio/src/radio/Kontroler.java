@@ -168,12 +168,20 @@ public class Kontroler implements Runnable, BasicPlayer{
 	 * Zatrzymanie playera funkcja pause() nie wp³ywa na dostêpny odcinek czasu.
 	 * @param pos liczba z przedzia³u [0,1) okreœlaj¹ca w którym punkcie nale¿y rozpocz¹æ dalesze odtwarzanie.
 	 */
-	public void setBufferPositionRelative(double pos){
+	public void setBufferPositionRelative(double pos,boolean startPlay){
 		try{
 			RewindBuffer b = (RewindBuffer) buf;
 			odtwarzacz.stop();
 			b.setBufferPositionRelative(pos);
-			odtwarzacz.play();
+//			synchronized(m_signal){
+//				try{
+//					m_signal.wait(100);
+//				}catch(Exception e1){}
+//			}
+			if(startPlay){
+				odtwarzacz.play();
+			}
+			System.out.println("K : ustalono now¹ pozycjê "+pos);
 		}catch(ClassCastException e){}
 	}
 

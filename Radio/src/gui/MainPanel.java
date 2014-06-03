@@ -10,16 +10,23 @@ import javax.swing.JToggleButton;
 import java.awt.event.ActionListener;
 import java.awt.event.ActionEvent;
 import java.io.IOException;
-import java.net.MalformedURLException;
+import java.text.DateFormat;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.Calendar;
+import java.util.Date;
+import java.util.concurrent.TimeUnit;
 
 import javax.swing.JButton;
 
 import radio.Kontroler;
 
+import javax.swing.ImageIcon;
 import javax.swing.JMenuBar;
 import javax.swing.JMenu;
-import javax.swing.JCheckBox;
 import javax.swing.JTextField;
+import javax.swing.Timer;
+import javax.swing.JLabel;
 
 public class MainPanel {
 
@@ -30,8 +37,17 @@ public class MainPanel {
 	private Object m_signal;
 	private Thread watekRadia;
 	private JToggleButton tglbtnStartRecording;
-	private JCheckBox chckbxRecordBuffer;
-	private JTextField textPosition;
+	private JTextField textCurrentDelay;
+	private Timer timer;
+
+	private long totalTime = 0;
+	private long delayTime = 0;
+
+
+	private boolean stoped = true;
+	private boolean paused = false;
+	private JTextField textMaxDelay;
+	private JTextField textSetDelay;
 	/**
 	 * Launch the application.
 	 */
@@ -66,22 +82,65 @@ public class MainPanel {
 		frmRadio.getContentPane().setLayout(null);
 		frmRadio.setResizable(false);
 		m_signal = new Object();
+
 		try {
 			m_radio = new Kontroler("http://wroclaw.radio.pionier.net.pl:8000/pl/tuba10-1.mp3",true,m_signal);
-		} catch (MalformedURLException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (LineUnavailableException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (UnsupportedAudioFileException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+		} catch (IOException| LineUnavailableException | UnsupportedAudioFileException e1) {
+			e1.printStackTrace();
 		}
+
 		tglBtnPlayPause = new JToggleButton("Play");
+
+		tglBtnPlayPause.setBounds(231, 63, 121, 23);
+		frmRadio.getContentPane().add(tglBtnPlayPause);
+
+		btnStop = new JButton("Stop");
+		btnStop.setBounds(231, 97, 121, 23);
+		frmRadio.getContentPane().add(btnStop);
+
+		tglbtnStartRecording = new JToggleButton("Start Recording");
+		tglbtnStartRecording.setBounds(231, 131, 121, 23);
+		frmRadio.getContentPane().add(tglbtnStartRecording);
+
+		textCurrentDelay = new JTextField();
+		textCurrentDelay.setText("00:00:00");
+		textCurrentDelay.setEditable(false);
+		textCurrentDelay.setBounds(10, 30, 86, 20);
+		frmRadio.getContentPane().add(textCurrentDelay);
+		textCurrentDelay.setColumns(10);
+
+		JButton btnSetPosition = new JButton("Set Position");
+		btnSetPosition.setBounds(231, 29, 121, 23);
+		frmRadio.getContentPane().add(btnSetPosition);
+
+		textMaxDelay = new JTextField();
+		textMaxDelay.setText("00:00:00");
+		textMaxDelay.setEditable(false);
+		textMaxDelay.setColumns(10);
+		textMaxDelay.setBounds(128, 30, 86, 20);
+		frmRadio.getContentPane().add(textMaxDelay);
+
+		textSetDelay = new JTextField();
+		textSetDelay.setText("00:00:00");
+		textSetDelay.setColumns(10);
+		textSetDelay.setBounds(10, 81, 86, 20);
+		frmRadio.getContentPane().add(textSetDelay);
+
+		JLabel lblNewLabel = new JLabel("Current delay");
+		lblNewLabel.setBounds(10, 11, 86, 14);
+		frmRadio.getContentPane().add(lblNewLabel);
+
+		JLabel lblNewLabel_1 = new JLabel("Max delay");
+		lblNewLabel_1.setBounds(128, 11, 86, 14);
+		frmRadio.getContentPane().add(lblNewLabel_1);
+
+		JLabel lblNewLabel_2 = new JLabel("Set position");
+		lblNewLabel_2.setBounds(10, 63, 86, 14);
+		frmRadio.getContentPane().add(lblNewLabel_2);
+
+		//////////////////////////////////////////////////////
+		/////				PLAY / PAUSE				//////
+		//////////////////////////////////////////////////////
 		tglBtnPlayPause.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent arg0) {
 				JToggleButton tBtn = (JToggleButton)arg0.getSource();
@@ -92,28 +151,39 @@ public class MainPanel {
 						synchronized(m_signal){
 							m_signal.notify();
 						}
+						if(stoped){
+							timer.start();
+							stoped = false;
+						}
+						paused = false;
 					}else{
 						tBtn.setText("Play");
 						m_radio.pause();
+						paused = true;
 					}
 				}catch(Exception wyj){
 					wyj.printStackTrace();
 				}
 			}
 		});
-		tglBtnPlayPause.setBounds(231, 63, 121, 23);
-		frmRadio.getContentPane().add(tglBtnPlayPause);
-		
-		btnStop = new JButton("Stop");
+		//////////////////////////////////////////////////////
+		/////					STOP					//////
+		//////////////////////////////////////////////////////
 		btnStop.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent arg0) {
 				m_radio.stop();
+				stoped = true;
+				timer.stop();
+				tglBtnPlayPause.setSelected(false);
+				totalTime = 0;
+				delayTime = 0;
+				textCurrentDelay.setText("00:00:00");
+				textMaxDelay.setText("00:00:00");
 			}
 		});
-		btnStop.setBounds(231, 97, 121, 23);
-		frmRadio.getContentPane().add(btnStop);
-		
-		tglbtnStartRecording = new JToggleButton("Start Recording");
+		//////////////////////////////////////////////////////
+		/////			  START RECORDING  				//////
+		//////////////////////////////////////////////////////
 		tglbtnStartRecording.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent arg0) {
 				JToggleButton tBtn = (JToggleButton)arg0.getSource();
@@ -130,32 +200,64 @@ public class MainPanel {
 				}
 			}
 		});
-		tglbtnStartRecording.setBounds(231, 131, 121, 23);
-		frmRadio.getContentPane().add(tglbtnStartRecording);
-		
-		chckbxRecordBuffer = new JCheckBox("Record Buffer");
-		chckbxRecordBuffer.setBounds(128, 131, 97, 23);
-		frmRadio.getContentPane().add(chckbxRecordBuffer);
-		
-		textPosition = new JTextField();
-		textPosition.setBounds(139, 30, 86, 20);
-		frmRadio.getContentPane().add(textPosition);
-		textPosition.setColumns(10);
-		
-		JButton btnSetPosition = new JButton("Set Position");
+		//////////////////////////////////////////////////////
+		/////				SET POSITION				//////
+		//////////////////////////////////////////////////////
 		btnSetPosition.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
-				String str = textPosition.getText();
-				double val = Double.parseDouble(str);
-				m_radio.setBufferPositionRelative(val);
+				String str = textSetDelay.getText();
+				DateFormat formatter = new SimpleDateFormat("HH:mm:ss");
+				try {
+					Date dt = formatter.parse(str);
+					Calendar cal = Calendar.getInstance();
+					cal.setTime(dt);
+					int hour = cal.get(Calendar.HOUR);
+					int minute = cal.get(Calendar.MINUTE);
+					int second = cal.get(Calendar.SECOND);
+					if(totalTime>0){
+						long pom = 1000*(hour*3600+minute*60+second);
+						m_radio.setBufferPositionRelative(((double)pom)/totalTime,!(stoped||paused));
+						delayTime = totalTime - pom;
+					}else{
+						m_radio.setBufferPositionRelative(0,!(stoped||paused));
+						delayTime = totalTime;
+					}
+				} catch (ParseException e1) {
+					e1.printStackTrace();
+				}				
 			}
 		});
-		btnSetPosition.setBounds(231, 29, 121, 23);
-		frmRadio.getContentPane().add(btnSetPosition);
-		
+		//////////////////////////////////////////////////////
+		/////					TIMETR					//////
+		//////////////////////////////////////////////////////
+		timer = new Timer(1000,new ActionListener() {
+			public void actionPerformed(ActionEvent arg0) {
+				if(!stoped){
+					String hms;
+					if(paused){
+						delayTime +=1000;
+						totalTime +=1000;
+					}else{
+						totalTime +=1000;
+					}
+						hms = String.format("%02d:%02d:%02d", TimeUnit.MILLISECONDS.toHours(delayTime),
+								TimeUnit.MILLISECONDS.toMinutes(delayTime) - TimeUnit.HOURS.toMinutes(TimeUnit.MILLISECONDS.toHours(delayTime)),
+								TimeUnit.MILLISECONDS.toSeconds(delayTime) - TimeUnit.MINUTES.toSeconds(TimeUnit.MILLISECONDS.toMinutes(delayTime)));
+						textCurrentDelay.setText(hms);
+					hms = String.format("%02d:%02d:%02d", TimeUnit.MILLISECONDS.toHours(totalTime),
+							TimeUnit.MILLISECONDS.toMinutes(totalTime) - TimeUnit.HOURS.toMinutes(TimeUnit.MILLISECONDS.toHours(totalTime)),
+							TimeUnit.MILLISECONDS.toSeconds(totalTime) - TimeUnit.MINUTES.toSeconds(TimeUnit.MILLISECONDS.toMinutes(totalTime)));
+					textMaxDelay.setText(hms);
+				}
+
+
+			}
+		});
+
+		ImageIcon img = new ImageIcon("C:/Users/Dominik/git/Radio/Radio/src/gui/icon.png");
+		frmRadio.setIconImage(img.getImage());
 		JMenuBar menuBar = new JMenuBar();
 		frmRadio.setJMenuBar(menuBar);
-		
 		JMenu mnNewMenu = new JMenu("New menu");
 		menuBar.add(mnNewMenu);
 		watekRadia = new Thread(m_radio);
