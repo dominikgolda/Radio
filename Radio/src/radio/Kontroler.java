@@ -66,6 +66,7 @@ public class Kontroler implements Runnable, BasicPlayer{
 					m_notifier.notifyAll();
 				}
 			}
+
 		}
 		System.out.println("K : Koñczê pracê");
 	}
@@ -89,51 +90,48 @@ public class Kontroler implements Runnable, BasicPlayer{
 
 
 	@Override
-	public void play(){
+	public void play() throws MalformedURLException, IOException, LineUnavailableException, UnsupportedAudioFileException{
 		if(m_firstStart){
-			try{
-				GetStreamInfo streamInfo = new GetStreamInfo(radioURL);
-				buf = new RewindBuffer(buforInternet);
-				odtwarzacz = null;
-				intRead = null;
-				intRead = new InternetReader(buforInternet,streamInfo.getStream());
-				Thread watekInternetowy;
-				watekInternetowy = new Thread(intRead);
-				watekInternetowy.start();
-				System.out.println("1");
-				//czekamy na nape³nienie bufora
-				synchronized(buforInternet){
-					if(!buforInternet.getDataAvailableFlag()){	//tu nale¿y dopisaæ jeszcze flagi, stop (exit?)
-						try{				
-							buforInternet.wait();
-						}catch (InterruptedException  e){e.printStackTrace();}
-					}
+
+			GetStreamInfo streamInfo = new GetStreamInfo(radioURL);
+			buf = new RewindBuffer(buforInternet);
+			odtwarzacz = null;
+			intRead = null;
+			intRead = new InternetReader(buforInternet,streamInfo.getStream());
+			Thread watekInternetowy;
+			watekInternetowy = new Thread(intRead);
+			watekInternetowy.start();
+			System.out.println("1");
+			//czekamy na nape³nienie bufora
+			synchronized(buforInternet){
+				if(!buforInternet.getDataAvailableFlag()){	//tu nale¿y dopisaæ jeszcze flagi, stop (exit?)
+					try{				
+						buforInternet.wait();
+					}catch (InterruptedException  e){e.printStackTrace();}
 				}
-				System.out.println("2");
-				//odczyt z bufora
-				buf.write();
-				odtwarzacz = new AudioPlayer(streamInfo.getStreamFormat(),buf,m_notifier,BUFFER_SIZE);
-				intRead.stop();
-				System.out.println("3");
-
-				classList = new ArrayList<BasicPlayer>();
-				classList.add(intRead);
-				classList.add(buf);
-				classList.add(odtwarzacz);
-				m_firstStart = false;
-				System.out.println("4");
-				Thread  watekPlayera;
-				watekPlayera = new Thread(odtwarzacz);
-				watekPlayera.start();
-				intRead.play();
-				this.play();
-				System.out.println("5");
-				STOPED = false;
-
-			}catch(Exception e){
-				m_firstStart = true;
-				e.printStackTrace();
 			}
+			System.out.println("2");
+			//odczyt z bufora
+			buf.write();
+			odtwarzacz = new AudioPlayer(streamInfo.getStreamFormat(),buf,m_notifier,BUFFER_SIZE);
+			intRead.stop();
+			System.out.println("3");
+
+			classList = new ArrayList<BasicPlayer>();
+			classList.add(intRead);
+			classList.add(buf);
+			classList.add(odtwarzacz);
+			m_firstStart = false;
+			System.out.println("4");
+			Thread  watekPlayera;
+			watekPlayera = new Thread(odtwarzacz);
+			watekPlayera.start();
+			intRead.play();
+			this.play();
+			System.out.println("5");
+			STOPED = false;
+
+
 		}else{
 			if(STOPED==true && PAUSED == true){
 				STOPED = false;
@@ -174,11 +172,20 @@ public class Kontroler implements Runnable, BasicPlayer{
 			RewindBuffer b = (RewindBuffer) buf;
 			odtwarzacz.stop();
 			b.setBufferPositionRelative(pos);
-			synchronized(m_signal){
-				try{
-					m_signal.wait(100);
-				}catch(Exception e1){}
+			Integer a;
+			for(Integer i = 1;i<Integer.MAX_VALUE/20;i++){
+				a = i;
 			}
+			boolean pom;
+			//czekanie, ¿eby na pewno wy³¹czy³o siê radio, ¿eby nie by³o pomieszanych audycji z ró¿nych momentó
+			do{
+				pom = false;
+				synchronized(m_signal){		
+					try{
+						m_signal.wait(50);
+					}catch(Exception e1){pom = true;}
+				}
+			}while(pom);
 			if(startPlay){
 				odtwarzacz.play();
 			}

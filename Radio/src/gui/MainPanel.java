@@ -9,6 +9,7 @@ import javax.swing.JToggleButton;
 
 import java.awt.event.ActionListener;
 import java.awt.event.ActionEvent;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.net.URL;
 import java.text.DateFormat;
@@ -25,6 +26,7 @@ import radio.Kontroler;
 import javax.swing.ImageIcon;
 import javax.swing.JMenuBar;
 import javax.swing.JMenu;
+import javax.swing.JOptionPane;
 import javax.swing.JTextField;
 import javax.swing.Timer;
 import javax.swing.JLabel;
@@ -48,6 +50,7 @@ public class MainPanel {
 
 	private long totalTime = 0;
 	private long delayTime = 0;
+	private long posTime = 0;
 
 
 	private boolean stoped = true;
@@ -63,7 +66,6 @@ public class MainPanel {
 	private JLabel lblFile;
 
 	private String obecnaStacja;
-	private JLabel debug;
 	/**
 	 * Launch the application.
 	 */
@@ -177,7 +179,7 @@ public class MainPanel {
 
 
 		textSetFilePath = new JTextField();
-		textSetFilePath.setText("\"C:\\Users\\Dominik\\Desktop\\test.mp3\"");
+		textSetFilePath.setText("C:\\Users\\Dominik\\Desktop\\test.mp3");
 		textSetFilePath.setColumns(10);
 		textSetFilePath.setBounds(46, 179, 299, 20);
 		frmRadio.getContentPane().add(textSetFilePath);
@@ -189,10 +191,6 @@ public class MainPanel {
 		lblFile = new JLabel("File");
 		lblFile.setBounds(10, 182, 26, 14);
 		frmRadio.getContentPane().add(lblFile);
-		
-		debug = new JLabel("Current delay");
-		debug.setBounds(10, 210, 335, 14);
-		frmRadio.getContentPane().add(debug);
 
 		//////////////////////////////////////////////////////
 		/////				PLAY / PAUSE				//////
@@ -202,7 +200,9 @@ public class MainPanel {
 				JToggleButton tBtn = (JToggleButton)arg0.getSource();
 				try{
 					System.out.println("gui: obecna stacja "+obecnaStacja);
+					///		W³¹czanie nowej stacji		///
 					if(!obecnaStacja.equals(textSetURL.getText())){
+
 						m_radio.exitRadio();
 						synchronized(m_signal){
 							m_signal.notify();
@@ -212,7 +212,12 @@ public class MainPanel {
 						m_radio = new Kontroler(obecnaStacja,true,m_signal);
 						watekRadia = new Thread(m_radio);
 						watekRadia.start();
+						totalTime = 0;
+						delayTime = 0;
+						textCurrentDelay.setText("00:00:00");
+						textMaxDelay.setText("00:00:00");
 					}
+					///		Rozpoczêcie/zakoñczenie odtwarzania		///
 					if(tBtn.isSelected()){
 						tBtn.setText("Pause");
 						m_radio.play();
@@ -230,7 +235,10 @@ public class MainPanel {
 						paused = true;
 					}
 				}catch(Exception wyj){
-					wyj.printStackTrace();
+					tBtn.setSelected(false);
+					tBtn.setText("Play");
+					//m_radio.pause();
+						wyj.printStackTrace();
 				}
 			}
 		});
@@ -239,14 +247,17 @@ public class MainPanel {
 		//////////////////////////////////////////////////////
 		btnStop.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent arg0) {
-				m_radio.stop();
-				stoped = true;
-				timer.stop();
-				tglBtnPlayPause.setSelected(false);
-				totalTime = 0;
-				delayTime = 0;
-				textCurrentDelay.setText("00:00:00");
-				textMaxDelay.setText("00:00:00");
+				try{
+					m_radio.stop();
+					stoped = true;
+					timer.stop();
+					tglBtnPlayPause.setSelected(false);
+					tglBtnPlayPause.setText("Play");
+					totalTime = 0;
+					delayTime = 0;
+					textCurrentDelay.setText("00:00:00");
+					textMaxDelay.setText("00:00:00");
+				}catch(Exception e){}
 			}
 		});
 		//////////////////////////////////////////////////////
@@ -257,8 +268,18 @@ public class MainPanel {
 				JToggleButton tBtn = (JToggleButton)arg0.getSource();
 				try{
 					if(tBtn.isSelected()){
-						tBtn.setText("Recording...");
-						m_radio.recordBuffer(textSetFilePath.getText(), true);
+						try{
+							m_radio.recordBuffer(textSetFilePath.getText(), true);
+							tBtn.setText("Recording...");								//kolejnoœæ jest istotna. Je¿eli uda siê poprzednia operacja to ta prawie na pewno te¿
+						}catch(FileNotFoundException e1){
+							JOptionPane.showMessageDialog(frmRadio, "Nie uda³o siê otworzyæ pliku","File error",JOptionPane.ERROR_MESSAGE);
+							tBtn.setSelected(false);	//"Odbicie" przycisku w przypadku b³êdu
+						}catch(IOException e){
+							JOptionPane.showMessageDialog(frmRadio, "B³¹d I/O","File error",JOptionPane.ERROR_MESSAGE);							
+							tBtn.setSelected(false);	//"Odbicie" przycisku w przypadku b³êdu
+						}catch(Exception e2){
+							tBtn.setSelected(false);
+						}
 					}else{
 						tBtn.setText("Start Recording");
 						m_radio.stopRecording();
@@ -298,6 +319,8 @@ public class MainPanel {
 
 				} catch (ParseException e1){
 					e1.printStackTrace();
+				} catch (Exception e2){
+
 				}
 			}
 		});
@@ -345,13 +368,14 @@ public class MainPanel {
 		/////				PLUS HALF MIN				//////
 		btnPlusHalfMin.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent arg0) {
-				long tm = totalTime - 30000;
-				if(tm<0){
-					tm = 0;
+				posTime = posTime - 30000;
+				if(posTime<0){
+					posTime = 0;
 				}
-				String hms = String.format("%02d:%02d:%02d", TimeUnit.MILLISECONDS.toHours(totalTime),
-						TimeUnit.MILLISECONDS.toMinutes(tm) - TimeUnit.HOURS.toMinutes(TimeUnit.MILLISECONDS.toHours(tm)),
-						TimeUnit.MILLISECONDS.toSeconds(tm) - TimeUnit.MINUTES.toSeconds(TimeUnit.MILLISECONDS.toMinutes(tm)));
+				
+				String hms = String.format("%02d:%02d:%02d", TimeUnit.MILLISECONDS.toHours(posTime),
+						TimeUnit.MILLISECONDS.toMinutes(posTime) - TimeUnit.HOURS.toMinutes(TimeUnit.MILLISECONDS.toHours(posTime)),
+						TimeUnit.MILLISECONDS.toSeconds(posTime) - TimeUnit.MINUTES.toSeconds(TimeUnit.MILLISECONDS.toMinutes(posTime)));
 				textSetDelay.setText(hms);
 
 			}
@@ -360,13 +384,13 @@ public class MainPanel {
 		/////				MINUS HALF MIN				//////
 		btnMinusHalfMin.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
-				long tm = totalTime + 30000;
-				if(tm>totalTime){
-					tm = totalTime;
+				posTime = posTime + 30000;
+				if(posTime>totalTime){
+					posTime = totalTime;
 				}
-				String hms = String.format("%02d:%02d:%02d", TimeUnit.MILLISECONDS.toHours(totalTime),
-						TimeUnit.MILLISECONDS.toMinutes(tm) - TimeUnit.HOURS.toMinutes(TimeUnit.MILLISECONDS.toHours(tm)),
-						TimeUnit.MILLISECONDS.toSeconds(tm) - TimeUnit.MINUTES.toSeconds(TimeUnit.MILLISECONDS.toMinutes(tm)));
+				String hms = String.format("%02d:%02d:%02d", TimeUnit.MILLISECONDS.toHours(posTime),
+						TimeUnit.MILLISECONDS.toMinutes(posTime) - TimeUnit.HOURS.toMinutes(TimeUnit.MILLISECONDS.toHours(posTime)),
+						TimeUnit.MILLISECONDS.toSeconds(posTime) - TimeUnit.MINUTES.toSeconds(TimeUnit.MILLISECONDS.toMinutes(posTime)));
 				textSetDelay.setText(hms);
 
 			}
@@ -379,10 +403,8 @@ public class MainPanel {
 		URL location = MainPanel.class.getProtectionDomain().getCodeSource().getLocation();
 		String sciezka = location.toString();//+"/gui/icon.png";
 		sciezka = sciezka.replaceFirst("file:/", "");
-				sciezka = sciezka.replace("radio.jar", "");
-				sciezka = sciezka + "icon.png";
-		//		System.out.println(sciezka);
-		debug.setText(sciezka);
+		sciezka = sciezka.replace("radio.jar", "");
+		sciezka = sciezka + "icon.png";
 		ImageIcon img = new ImageIcon(sciezka);
 		frmRadio.setIconImage(img.getImage());
 

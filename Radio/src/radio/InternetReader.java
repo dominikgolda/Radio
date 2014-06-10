@@ -45,6 +45,13 @@ public class InternetReader  implements Runnable, BasicPlayer {
 						m_exchangeBuffer.fillBuffer(m_buffer);
 						System.out.println("IR: przepisa³em dane do bufora");
 						m_wskZapisu = 0;
+					}else{
+						synchronized (m_exchangeBuffer) {
+							try{
+								System.out.println("IR: zatrzymany");
+								m_exchangeBuffer.wait();
+							}catch (InterruptedException  e){e.printStackTrace();}
+						}
 					}
 				}catch(IOException e){
 					System.out.println(e.getMessage());
@@ -52,10 +59,11 @@ public class InternetReader  implements Runnable, BasicPlayer {
 					System.out.println(e.getMessage());
 					e.printStackTrace();
 				}
+				System.out.println("IR: Jeden obieg petli");
 			}
 		}finally{
 			try{
-			m_strumien.close();
+				m_strumien.close();
 			}catch(IOException e){}
 		}
 		Thread.currentThread().interrupt();

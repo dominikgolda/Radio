@@ -6,6 +6,7 @@ import java.io.IOException;
 
 
 
+
 import javax.sound.sampled.*;
 
 import java.io.*;
@@ -120,6 +121,8 @@ public class AudioPlayer implements BasicPlayer, Runnable{
 						}					
 					}
 				}while(pom<=0);
+				System.out.println("AP: Jeden obieg petli");
+
 			}
 
 		}catch(Exception e){
