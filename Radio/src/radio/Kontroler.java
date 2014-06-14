@@ -39,9 +39,10 @@ public class Kontroler implements Runnable, BasicPlayer{
 
 
 		while(!EXIT){
-
+			System.out.println("K : Obieg pêtli");
 			synchronized(m_signal){
 				while(STOPED){
+					System.out.println("K : zatrzymany - STOPED");
 					try{
 						m_signal.wait();
 					}catch(InterruptedException e){}
@@ -156,8 +157,10 @@ public class Kontroler implements Runnable, BasicPlayer{
 	@Override
 	public void exitRadio() {
 		EXIT = true;
-		for(BasicPlayer au:classList){
-			au.exitRadio();
+		if(classList!=null){
+			for(BasicPlayer au:classList){
+				au.exitRadio();
+			}
 		}
 	}
 

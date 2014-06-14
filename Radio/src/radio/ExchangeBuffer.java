@@ -28,6 +28,7 @@ class ExchangeBuffer{
 			m_buffer[i] = tab[i];
 		}
 		m_newDataAvailable = true;
+		System.out.println("EB: bufor nape³niony");
 		notifyAll();
 	}
 	
@@ -41,6 +42,7 @@ class ExchangeBuffer{
 			tab[i+pos] = m_buffer[i];
 		}
 		m_newDataAvailable = false;
+		System.out.println("EB: bufor opró¿niony");
 		notifyAll();
 	}
 

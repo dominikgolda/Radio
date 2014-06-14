@@ -203,9 +203,11 @@ public class MainPanel {
 					///		W³¹czanie nowej stacji		///
 					if(!obecnaStacja.equals(textSetURL.getText())){
 
-						m_radio.exitRadio();
-						synchronized(m_signal){
-							m_signal.notify();
+						if(m_radio!=null){
+							m_radio.exitRadio();
+							synchronized(m_signal){
+								m_signal.notify();
+							}
 						}
 						obecnaStacja = textSetURL.getText();
 						System.out.println("gui: obecna stacja "+obecnaStacja);
@@ -233,6 +235,9 @@ public class MainPanel {
 						tBtn.setText("Play");
 						m_radio.pause();
 						paused = true;
+					}
+					synchronized(m_signal){
+						m_signal.notify();
 					}
 				}catch(Exception wyj){
 					tBtn.setSelected(false);
