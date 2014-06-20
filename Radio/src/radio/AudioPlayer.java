@@ -57,7 +57,7 @@ public class AudioPlayer implements BasicPlayer, Runnable{
 			byte[] bufor= new byte[maksDlRamki];
 			int przeczytane;
 			//			int availableData;						//liczba bajtów danych
-			m_odtwarzacz.open();
+//			m_odtwarzacz.open();
 			m_odtwarzacz.start();
 			AudioInputStream auStr1;
 			while(!m_exitPlayer){
